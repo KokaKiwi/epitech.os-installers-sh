@@ -16,7 +16,7 @@ function error()
 function beg()
 {
     CMD=`cpad "$1" $CPAD_SIZE " "`
-    echo -e -n "\033[32m${CMD}${2}\033[0m"
+    echo -e -n "\033[32m${CMD}${2}\033[0m\n"
 }
 
 function end()

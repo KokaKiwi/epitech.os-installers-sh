@@ -3,6 +3,10 @@
 source utils/install-lib.sh
 source utils/epilib.sh
 
+if [ -z "$EPIHOME" ]; then
+    EPIHOME=$HOME
+fi
+
 header
 
 info "Verification de la connection a Internet..."
@@ -14,4 +18,7 @@ PLATEFORM=`uname -i`
 
 if ask "Voulez-vous continuer?"; then
     source "targets/$1.sh"
+    info "Installation terminee."
+else
+    info "Installation annulee."
 fi

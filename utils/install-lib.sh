@@ -13,17 +13,18 @@ function error_handler()
 
 function epi-install()
 {
-    beg "apt-get" "Installing '$1'..."
+    beg "apt-get" "$2"
     apt-get -qq -f -y -s install $1
     error_handler "Failed to install '$1'."
-    end "apt-get" "Done."
+    end "apt-get" "$2"
 }
 
 function grab()
 {
     beg "wget" "Pulling $1... [$2/$3]"
     if [ ! -f "$3" ]; then
-        wget -q "$2/$3"
+        wget -q --no-check-certificate "$2/$3"
+        error_handler "Error during pulling '3'."
         end "wget" "$1"
     else
         end "-" "Already have $1"
@@ -34,6 +35,7 @@ function deco()
 {
     beg "tar" "Un-archiving $1..."
     tar -xf $2
+    error_handler "Error during un-archiving $1."
     end "tar" "$1"
 }
 
@@ -41,7 +43,7 @@ function ask()
 {
     echo -e -n "\r\033[1;34m${1} [\033[4;34myes\033[0m\033[1;34m/no]\033[0m "
     read answer
-    if [ $answer = '' ]; then
+    if [ -z "$answer" ]; then
         answer='yes'
     fi
     if [ ${answer:-no} == 'yes' ]; then
@@ -55,5 +57,6 @@ function copy()
 {
     beg "cp" "$1"
     cp -r $2 $3
-    end "cp" "Done."
+    error_handler "Erreur durant la copie des fichiers."
+    end "cp" "$1"
 }

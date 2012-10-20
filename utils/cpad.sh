@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CPAD_SIZE=12
+CPAD_SIZE=16
 
 function cpad {
     word="$1"
