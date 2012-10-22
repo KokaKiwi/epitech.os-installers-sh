@@ -1,0 +1,44 @@
+#!/usr/bin/perl
+
+use strict;
+use Socket;
+use IO::Socket::INET;
+use IO::Socket::UNIX;
+
+my	$login = `whoami`;
+chomp($login);
+my	$hostname = "pc-" . $login;
+my	$ns_link = "/tmp/ns_link";
+
+my	$sock;
+my	$timeout = 360;
+my	$retry = 0;
+
+my	$path = "/usr/libexec/ns_connect";
+
+sub	write_data()
+{
+    print CLIENT "update $hostname";
+}
+
+sub	lconnect()
+{
+    socket(CLIENT, PF_UNIX, SOCK_STREAM, 0);
+    connect(CLIENT, sockaddr_un($ns_link));
+    if (!<CLIENT>)
+    {
+	system($path . " &");
+	exit;
+    }
+}
+
+sub	main()
+{
+    $0 = "ns_host_connect";
+    &lconnect();
+    &write_data();
+    return (0);
+}
+
+
+&main();

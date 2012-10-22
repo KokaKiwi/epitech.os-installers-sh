@@ -1,0 +1,231 @@
+#!/usr/bin/perl -w
+## ns_client for  in /home/sevi//netsoul
+## 
+## Made by vi se
+## Login   <sevi@epitech.net>
+## 
+## Started on  Mon Nov  8 12:23:11 2010 vi se
+## Last update Wed Dec  1 12:14:48 2010 root
+##
+
+use     IO::Socket::INET;
+use     IO::Select;
+use     GSSAPI;
+use     vars qw/ %opt /;
+use     POSIX;
+use     Tie::RefHash;
+use     Fcntl;
+use	Socket;
+use	X11::IdleTime;
+
+my	%lsock = (
+    'addr' => "localhost",
+    'port' => "4747"
+    );
+    
+my	$socket;
+my	$select;
+
+my	%ns_cmd;
+my	%ns_user_cmd;
+
+my	%u_param;
+
+my	$viewer = "/usr/libexec/ns_xm";
+
+
+my	$socket_timeout = 400;
+my	$socket_retry = 0;
+my	$socket_sleep = "300";
+
+my	$idle_timeout = 60;
+my	$cur_state = "actif";
+
+sub	create_socket()
+{
+    while (!$socket)
+    {
+	$socket =  IO::Socket::INET->new(Proto => "tcp",
+					 Type => SOCK_STREAM,
+					 PeerAddr => $lsock{'addr'},
+					 PeerPort => $lsock{'port'});
+	if ($socket_retry eq $socket_timeout)
+	{
+	    &viewer("\"Netsoul local client : Disconnected\n\"");
+	    exit;
+	}
+	elsif (!$socket)
+	{
+	    &viewer("\"Netsoul local client : Disconnected\n\"");
+	    sleep $socket_sleep;
+	    $socket_retry++;
+	}
+    }
+    print "Netsoul client connected to ns_socket .... \n";
+    &viewer("\"Netsoul local client : Connected\n\"");
+    $select = IO::Select->new($socket) if (!defined($select));
+    return (0);
+}
+
+
+sub	get_id()
+{
+    my	$data = $_[0];
+    my	$tmp;
+
+    ($u_param{'id_fd'},
+     $u_param{'id_type'},
+     $u_param{'id_auth_ag'},
+     $u_param{'id_auth_user'},
+     $u_param{'id_name'},
+     $u_param{'id_host_ip'},
+     $u_param{'id_host_type'},
+     $u_param{'id_loc'},
+     $u_param{'id_group'}) = split(/:|\/|@/, $data);
+    $tmp = inet_aton($u_param{'id_host_ip'});
+    $u_param{'id_host_name'} = gethostbyaddr($tmp, AF_INET);
+    $u_param{'id_host_name'} = $u_param{'id_host_ip'} if (!$u_param{'id_host_name'});
+}
+
+sub	viewer()
+{
+    my	$data = $_[0];
+    chomp($data);
+
+    system("$viewer $data &");
+}
+
+sub	ns_clear()
+{
+    my	$str = $_[0];
+
+    $str =~ s/\\n/"\n"/ge;
+    $str =~ s/([`\"\$\\]{1})/"\\".$1/ge;
+    return ($str);
+}
+
+
+sub	url_decode
+{
+    my	$todecode = $_[0];
+
+    $todecode =~ tr/+/ /;
+    $todecode =~ s/%([0-9a-fA-F]{2})/pack("c",hex($1))/ge;
+    return ($todecode);
+}
+
+sub	msg()
+{
+    shift @_;
+    
+    return (0) if (!$_[0]);
+    my $msg = &ns_clear(&url_decode($_[0]));
+    my $dst = &ns_clear(&url_decode($_[1]));
+    &viewer("\" From : $u_param{'id_name'}\@$u_param{'id_host_name'} ($u_param{'id_group'}) ($u_param{'id_loc'})\n\"\"-> $msg\n----\n\"");
+}
+
+
+sub	user_cmd()
+{
+    my	@arg = @_;
+    my	$cmd;
+
+    shift @arg;
+    &get_id($arg[0]);
+    while ($arg[0] ne "|")
+    {
+	shift @arg;
+    }
+    shift @arg;
+    if (exists($ns_user_cmd{$arg[0]}))
+    {
+	my	$fct;
+
+	$fct = $ns_user_cmd{$arg[0]};
+	&$fct(@arg);
+    }
+}
+
+sub	parse_data()
+{
+    my	$data = $_[0];
+    my	@arg;
+
+    chomp($data);
+    @arg = split(/\s+/, $data);
+    if (exists($ns_cmd{$arg[0]}))
+    {
+	my	$fct;
+
+	$fct = $ns_cmd{$arg[0]};
+	\& $fct(@arg);
+    }
+}
+
+sub     init_cmd()
+{
+    $ns_cmd{"user_cmd"} = "user_cmd";
+    &init_user_cmd();
+}
+
+sub     init_user_cmd()
+{
+    $ns_user_cmd{"msg"} = "msg";
+}
+
+sub	update_status()
+{
+    my	$idle = GetIdleTime();
+
+    return ("actif") if ($idle < $idle_timeout && $cur_state eq "away");
+    return ("away") if ($idle >= $idle_timeout && $cur_state eq "actif");
+    return (0);
+}
+
+sub	read_from_socket()
+{
+    my	$rv;
+    my	$data;
+    my	$status;
+
+    while (42)
+    {
+	foreach my $client ($select->can_read(1))
+	{
+	    $rv = $socket->recv($data, POSIX::BUFSIZ, 0);
+	    unless (defined($rv) && length $data)
+	    {
+		$select->remove($client);
+		close($socket);
+		$socket = 0;
+		print "Local socket closed, reconnect .... \n";
+		sleep 5;
+		&viewer("\"Netsoul local client : Disconnected\n\"");
+		&create_socket();
+		&read_from_socket();
+	    }
+	    &parse_data($data) if ($data);
+	    print "Datas received on socket\n";
+	}
+	if (($status = &update_status()) && $cur_state ne &update_status())
+	{
+	    $cur_state = $status;
+	    foreach my $client ($select->can_write(1))
+	    {
+		$rv = $client->send("state " . $status . "\n", 0);
+	    }
+	}
+	
+    }
+    return (0);
+}
+
+sub	init_prg()
+{
+    $0 = "netsoul_client";
+}
+
+&init_prg;
+&init_cmd;
+&create_socket;
+&read_from_socket;

@@ -1,0 +1,121 @@
+#!/usr/bin/perl
+use	Socket;
+use	IO::Socket;
+use	Net::hostent;
+use	Date::Format;
+
+
+
+get_host_connetd();
+open(F,"egrep \"$ARGV[0]\" /usr/site/etc/mlist|");
+@hosts = <F>;
+foreach $line (@hosts)
+{
+    chomp $line;
+    if ( $line =~ m/^\s*\#/ || $line eq "" )
+    {
+	print("$line\n");
+    }
+    else
+    {
+	($host,$sm,$pos) = split(/:/,$line);
+	if ((not exists($res{$host})) && ($ns ne "0"))
+	{
+	    print "$host ($sm $pos)\n";
+	}
+    }
+}
+
+###
+###
+###
+
+sub get_host_connetd()
+{
+    $SERVER		= "ns_server.epita.fr";
+    $PORT		= 4242;
+    $LIST_CMD	= "list_users\n";
+    $EXIT_CMD	= "exit\n";
+
+    if ( $ARGV[0] ne "")
+    {
+	$login_to_match = $ARGV[0];
+    }
+    else
+    {
+	$login_to_match = ".*";
+    }
+    
+    
+    &ns_connect($SERVER,$PORT);
+    ns_list_hosts();
+    print $sd "exit\n";
+    
+    foreach $host (@host_list)
+    {
+	($num,$host) = split(/\s+/,$host);
+	chomp($host);
+	$res{$host} = 1;
+    }
+    return (%res);
+}
+
+##
+## subs
+##
+
+sub     ns_connect()
+{
+    ($server,$port) = @_;
+    
+    
+    while (!($sd = IO::Socket::INET->new(
+                                         Proto    => "tcp",
+                                         PeerAddr => "ns-server.epita.fr",
+                                         PeerPort => $port,
+                                         Timeout => 3,
+                                         )))
+    {
+        print "Cannot Connect: $!\n";
+        sleep(5);
+    }
+}
+
+sub             ns_list_hosts()
+{
+    $null = <$sd>;
+    print $sd "list_hosts\n";
+    while ($line = <$sd>)
+    {
+        if ($line =~ m/cmd end/)
+        {
+            return ;
+        }
+        chomp ($line);
+        push @host_list,$line;
+    }
+}
+
+sub		process_auth_ag()
+{
+    $auth_ag = $_[0];
+    
+    if ( $auth_ag > 1)
+    {
+	return (sprintf("%d:trusted",$auth_ag));
+    }
+    return (sprintf("%d:weak",$auth_ag));
+}
+
+sub		process_auth_user()
+{
+    $auth_user = $_[0];
+    
+    if ( $auth_user > 1)
+    {
+	return (sprintf("%d:trusted",$auth_user));
+    }
+    return (sprintf("%d:weak",$auth_user));
+}
+
+

@@ -34,7 +34,7 @@ function grab()
 function deco()
 {
     beg "tar" "Un-archiving $1..."
-    tar -xf $2
+    tar xf $1
     error_handler "Error during un-archiving $1."
     end "tar" "$1"
 }

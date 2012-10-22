@@ -35,14 +35,36 @@ if [ $UID == '0' ]; then
 
     epi-install "gcc-multilib libc6-i386" "Installation des paquets multilib"
 
-    # Install emacs files.
+    info "-" "Configuration des fichiers specifiques."
+    deco "files/tuareg.tar.gz"
+    #cp -r tuareg/* /usr/share/emacs/site-lisp/
+    rm -rf tuareg
+    #cp -r files/usr /
+    #ln -s /usr/lib/libncurses.so.5 /usr/lib/libtinfo.so.5
+    #ln -s /usr/lib/libtinfo.so.5 /usr/lib/libtinfo.so
+    chmod -R 777 /usr/school
+    chmod 777 /usr/bin/dclock
+    chmod 777 /usr/bin/zlock
+    chmod 777 /usr/libexec/ns_auth
+    chmod 777 /usr/libexec/ns_client
+    chmod 777 /usr/libexec/ns_connect
+    chmod 777 /usr/libexec/ns_xm
+    chmod 4755 /sbin/poweroff
+    chmod 4755 /sbin/shutdown
+    chmod 4755 /sbin/reboot
+    chmod 4755 /sbin/halt
 
     epi-install "libqt4-gui libqt4-network p7zip-full emacs23 gmountiso emesene unrar-free p7zip filezilla subversion make wine git numlockx samba libpam-smbpass ocaml rlwrap xchat libsdl1.2debian libsdl1.2-dev libsdl-image1.2 libsdl-image1.2-dev libsdl-ttf2.0-0 libsdl-ttf2.0-dev libsdl-mixer1.2 libsdl-mixer1.2-dev gimp python-gpgme libgtkmm-2.4-dev libgtkmm-2.4-doc htop libx11-dev libxpm-dev x11proto-xext-dev libxext-dev" "Installation des paquets de base..."
     epi-install "apache2 apache2-doc mysql-server mysql-client php5 libapache2-mod-php5 php5-mysql phpmyadmin zlibc zlib1g zlib1g-dev libmysqlclient-dev mysql-common" "Installation des paquets web..."
     epi-install "module-assistant openafs-modules-source openafs-client openafs-krb5 heimdal-clients openafs-modules-dkms" "Installation des paquets AFS..."
 
     beg "-" "Configuration de OpenAFS"
-        sleep 1
+        #cp files/CellServDB /etc/openafs/
+        #cp files/ThisCell /etc/openafs/
+        #cp files/krb5.conf /etc/
+        chmod 644 /etc/openafs/CellServDB
+        chmod 644 /etc/openafs/ThisCell
+        chmod 644 /etc/krb5.conf
     end "-" "Configuration de OpenAFS"
 
     beg "-" "Demarrage du service OpenAFS"
@@ -55,11 +77,12 @@ if [ $UID == '0' ]; then
         sleep 1
     end "-" "Creation du lien symbolique 'u' vers l'AFS (Cette action peut necessiter plusieures minutes)"
 
-    info "Si ce n'est deja fait, relancez ce script en tant qu'utilisateur normal."
+    info "Si ce n'est deja fait, relancez ce script en tant qu'utilisateur normal: $0 $1"
     info "Il est conseille de redemarrer l'ordinateur afin d'appliquer les changements."
 
     if ask "Voulez-vous redemarrer l'ordinateur?"; then
-        reboot
+        sleep 1
+        #reboot
     fi
 
 else
@@ -89,5 +112,5 @@ else
         #gconftool-2 --type bool --set /apps/nautilus/preferences/show_advanced_permissions true
     end "gconftool-2" "Activation des permissions avancees dans Nautilus"
 
-    info "Si ce n'est deja fait, relancez ce script en tant que super-utilisateur."
+    info "Si ce n'est deja fait, relancez ce script en tant que super-utilisateur: sudo $0 $1"
 fi

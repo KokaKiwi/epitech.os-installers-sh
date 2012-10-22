@@ -1,0 +1,418 @@
+#!/usr/bin/perl -w
+## ns_auth for  in /home/sevi//netsoul
+
+use     strict;
+use     IO::Socket::INET;
+use     IO::Select;
+use     GSSAPI;
+use     POSIX;
+use     MIME::Base64;
+use     vars qw/ %opt /;
+use     Getopt::Std;
+use     Fcntl;
+use	Tie::RefHash;
+
+# NetSoul server parameters                                                                                                                                                                                   
+# Token must be encrypted as : des3-cbc-sha1                                                                                                                                                                     
+# Force encryption type in your krb5.conf as                                                                                                                                                                     
+# default_tkt_enctypes=des3-cbc-sha1                                                                                                                                                             
+
+
+my      %nsp = (
+    'addr' => 'ns-server.epitech.net',
+    'port' => '4242',
+    'localport' => '4747',
+    'bind_addr' => '127.0.0.1',
+    'creds' => "host\@ns-server.epitech.net",
+    'token' => 'undef',
+    'encrypt_token' => 'undef',
+    'socket' => 'undef'
+    );
+
+my      %nsfct = (
+    'ping' => \&ns_ping
+    );
+
+my	$viewer = "/usr/libexec/ns_xm";
+
+my	$path = "/usr/libexec/ns_auth -v";
+
+# Timeout
+
+my	$gss_timeout = 1;
+my	$gss_retry = 0;
+my	$gss_sleep = 300;
+
+my	$socket_timeout = 50;
+my	$socket_retry = 0;
+my	$socket_sleep = 300;
+
+# Auth flag must be eq 1 if full acces                                                                                                                                                                           
+my      $auth_flag = "0";
+
+# Socket / select                                                                                                                                                                                                
+my      $ns_socket;
+my      $local_socket;
+my      $select;
+
+
+# read data
+my	%lclients = ();
+my	%inbuffer = ();
+my	%outbuffer = ();
+my	%ready = ();
+
+tie %ready, 'Tie::RefHash';
+
+
+sub     validate_token()
+{
+    my  $old_token = $_[0];
+    chomp($old_token);
+    my  $new_token;
+    my  @tmp_array = split('\\n', $old_token);
+    foreach my $line (@tmp_array)
+    {
+        chomp($line);
+        $new_token .= $line;
+    }
+    return ($new_token);
+}
+
+
+sub     ns_get_creds()
+{
+    my ($target, $tname, $ttl);
+    my  $status;
+
+    $status = GSSAPI::Name->import( $target,
+                                    $nsp{'creds'},
+				    GSSAPI::OID::gss_nt_hostbased_service);
+
+    $status = $target->display($tname);
+
+    my $ctx = GSSAPI::Context->new();
+    my $imech = GSSAPI::OID::gss_mech_krb5;
+    my $iflags = 0 ;
+    my $bindings = GSS_C_NO_CHANNEL_BINDINGS;
+    my $creds = GSS_C_NO_CREDENTIAL;
+    my $itime = 0;
+    my $itoken = q{};
+    my $decode;
+
+    $status = $ctx->init($creds,$target,
+                         $imech,$iflags,$itime,$bindings,$itoken,
+                         undef, $nsp{'token'},undef,undef);
+
+    unless ($status->major == GSS_S_COMPLETE  ) {
+        print " [V] =Token problem with kerberos server\n [V] =Type klist\n" if $opt{v};
+	if ($gss_retry ne $gss_timeout)
+	{
+	    &viewer("\"Netsoul remote client : Disconnected\n\"");
+	    sleep $gss_sleep;
+	    print " [V] =Retrying\n" if $opt{v};
+	    $gss_retry++;
+	    &ns_get_creds();
+	}
+	else
+	{
+	    &viewer("\"Netsoul remote client : Disconnected\n\"");
+	    print " [V] =Token problem ... Timeout ... Exiting\n"  if $opt{v};
+	    system($path . "&");
+	    exit;
+	}
+    } else {
+        print " [V] =NetSoul token OK, can go to authentification...\n" if $opt{v};
+        $nsp{'encrypt_token'} = encode_base64($nsp{'token'});
+        $nsp{'encrypt_token'} = &validate_token($nsp{'encrypt_token'});
+    }
+}
+
+sub     usage()
+{
+    print(STDERR <<__EOF__);
+    This program is the netsoul linux client
+      usage: $0 [-hdvD]
+
+     -h        : this (help) message
+     -v        : verbose output on std
+   example: $0 -v 
+__EOF__
+exit;
+}
+
+
+sub     get_param()
+{
+    my $opt_string = 'hv';
+    getopts( "$opt_string", \%opt ) or &usage();
+    &usage() if $opt{h};
+}
+
+sub    sock_unblock()
+{
+    my  $socket = shift;
+    my  $flags;
+
+    $flags = fcntl($socket, F_GETFL, 0) or die "Can't get flags for socket :$!\n";
+    fcntl($socket, F_SETFL, $flags | O_NONBLOCK) or die "Can't make socket nonblocking :$!\n";
+}
+
+sub     ns_socket()
+{
+    print " [V] =Starting Netsoul Connection...\n" if $opt{v};
+    while (!$ns_socket)
+    {
+	$ns_socket = IO::Socket::INET->new(Proto => "tcp",
+					   Type => SOCK_STREAM,
+					   PeerPort => $nsp{'port'},
+					   PeerAddr => $nsp{'addr'},
+					   Timeout => 5);
+	
+	if ($socket_retry eq $socket_timeout && !$ns_socket)
+	{
+	    &viewer("\"Netsoul remote client : Disconnected\n\"");
+	    print " [V] =Timeout ... exiting \n";
+	    exit;
+	}
+	elsif (!$ns_socket)
+	{
+	    $socket_retry++;
+	    sleep $socket_sleep;
+	    &viewer("\"Netsoul remote client : Disconnected\n\"");
+	    print " [V] =Can't create socket retrying\n" if $opt{v};
+	}
+    }
+    &sock_unblock($ns_socket);
+    $select->add($ns_socket);
+    return (0);
+}
+
+sub     local_socket()
+{
+    print " [V] =Starting local Socket...\n" if $opt{v};
+    while (!$local_socket)
+    {
+	$local_socket = IO::Socket::INET->new(Proto => "tcp",
+					      Type => SOCK_STREAM,
+					      LocalPort => $nsp{'localport'},
+					      LocalAddr => $nsp{'bind_addr'},
+					      Listen => 1);
+	
+	if ($socket_retry eq $socket_timeout && !$local_socket)
+        {
+	    &viewer("\"Netsoul remote client : Disconnected\n\"");
+            print " [V] =Timeout ... exiting \n";
+            exit;
+        }
+        elsif (!$local_socket)
+        {
+            $socket_retry++;
+	    &viewer("\"Netsoul remote client : Disconnected\n\"");
+            sleep $socket_sleep;
+            print " [V] =Can't create socket retrying\n" if $opt{v};
+        }
+    }
+
+    &sock_unblock($local_socket);
+    $select = IO::Select->new($local_socket) if (!defined($select));
+    return (0);
+}
+
+
+sub	can_write()
+{
+    my	$rv;
+
+    foreach my $client ($select->can_write(1))
+    {
+	next unless exists $outbuffer{$client};
+	next if (!$outbuffer{$client});
+
+	$rv = $client->send($outbuffer{$client}, 0);
+	next unless (defined $rv);
+	if ($rv == length $outbuffer{$client} || $! == POSIX::EWOULDBLOCK)
+	{
+	    substr($outbuffer{$client}, 0, $rv) = '';
+	    delete $outbuffer{$client} unless length $outbuffer{$client};
+	}
+	else
+	{
+	    delete $inbuffer{$client};
+	    delete $outbuffer{$client};
+	    delete $ready{$client};
+	    delete $lclients{$client};
+
+	    $select->remove($client);
+	    close($client);
+	    next;
+	}
+    }
+}
+
+
+sub	kill_sockets()
+{
+    print " [V] =killing netsoul opened socket\n" if $opt{v};
+    $select->remove($ns_socket) if (defined($ns_socket));
+    close($ns_socket);
+    $auth_flag = 0;
+    $ns_socket = 0;
+    return (0);
+}
+
+sub	can_read()
+{
+    my  $socket;
+    my  $save_socket;
+    my  $data;
+    my  $rv;
+
+    foreach $socket ($select->can_read(1))
+    {
+        if ($socket == $local_socket)
+        {
+            $socket = $local_socket->accept();
+            $select->add($socket);
+            &sock_unblock($socket);
+	    $lclients{$socket} = 0;
+        }
+        elsif ($socket == $ns_socket)
+        {
+	    $rv = $socket->recv($data, POSIX::BUFSIZ, 0);
+            unless (defined($rv) && length $data)
+            {
+		&viewer("\"Netsoul remote client : Disconnected\n\"");
+		&kill_sockets();
+		sleep 5;
+		&ns_user();
+            }
+	    print " [V] =Event received from ns-server Transmitting to local-socket...\n$data\n\n" if $opt{v};
+	    $inbuffer{$socket} .= $data;
+        }
+        else
+        {
+            $rv = $socket->recv($data, POSIX::BUFSIZ, 0);
+            unless (defined($rv) && length $data)
+            {
+		delete $inbuffer{$socket};
+		delete $outbuffer{$socket};
+		delete $ready{$socket};
+		delete $lclients{$socket};
+
+                $select->remove($socket);
+                close $socket;
+                next;
+            }
+	    print " [V] =Event received from local-socket Transmitting to ns-server...\n$data\n\n" if $opt{v};
+	    $inbuffer{$socket} .= $data;
+        }
+	if ($inbuffer{$socket})
+	{
+	    while ($inbuffer{$socket} =~ s/(.*\n)//)
+	    {
+		push( @{$ready{$socket}}, $1 );
+	    }
+	}
+    }
+}
+
+
+sub	handle()
+{
+    my	$client = shift;
+    my	$req;
+
+    foreach $req (@{$ready{$client}})
+    {
+	if ($client eq $ns_socket)
+	{
+	    if ($req =~ /^ping /)
+	    {
+		$outbuffer{$ns_socket} = $req;
+		delete $ready{$client};
+		return (0);
+	    }
+	    foreach my $test ( keys %lclients)
+	    {
+		$outbuffer{$test} = $req;
+	    }
+	}
+	else
+	{
+	    $outbuffer{$ns_socket} = $req;
+	}
+    }
+    delete $ready{$client};
+}
+
+sub	loop()
+{
+    while (42)
+    {
+	&can_read();
+	if ($auth_flag eq 1)
+	{
+	    foreach my $client (keys %ready)
+	    {
+		&handle($client);
+	    }
+	}
+	else
+	{
+	    foreach my $client (keys %ready)
+	    {
+		&ns_auth($client);
+	    }
+	}
+	&can_write();
+    }
+}
+
+
+sub	ns_auth()
+{
+    my	$client = shift;
+    my	$req;
+
+    foreach $req (@{$ready{$client}})
+    {
+	if ($client eq $ns_socket)
+	{
+	    $auth_flag++ if ($req eq "rep 002 -- cmd end\n" && $req);
+	    $outbuffer{$client} = "auth_ag ext_user none - \n" if ($req =~ /^salut/);
+	    $outbuffer{$client} = "ext_user_klog $nsp{'encrypt_token'} Ubuntu_std Ubuntu_std - -\n" if ($auth_flag eq 1);
+	    $outbuffer{$client} .= "state actif\n" if ($auth_flag eq 1);
+	    &viewer("\"Netsoul remote client : Connected\n\"") if ($auth_flag eq 1);
+	}
+    }
+    delete $ready{$client};
+}
+
+sub	ns_user()
+{
+    &ns_socket();
+    &loop();
+}
+
+sub	viewer()
+{
+    my	$data = $_[0];
+    chomp($data);
+
+    system("$viewer $data &");
+}
+
+sub     main()
+{
+    $0 = "netsoul_auth";
+    &get_param();
+    print " [V] =Getting Netsoul creds to auth\n" if $opt{v};
+    &ns_get_creds();
+    &local_socket();
+    print " [V] =Starting Netsoul client\n" if $opt{v};
+    &ns_user();
+    print " [V] =Connecton succeed go to main loop\n" if $opt{v};
+}
+
+&main();

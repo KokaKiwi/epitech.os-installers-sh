@@ -1,0 +1,56 @@
+((("lex_gettoken_op" .
+   [0 0 0 0 0 1 0 0 0 0 0 0 0 0 0])
+  ("lex_gettoken_number" .
+   [0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0])
+  ("LEX_STATE_NUMBER" .
+   [0 0 0 6 1 0 0 0 0 0 1 0 0 0 0 0])
+  ("lex_gettoken_paren" .
+   [0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0])
+  ("while" .
+   [1 0 0 0 0])
+  ("lex_find_operator" .
+   [0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0])
+  ("return" .
+   [2 0 0 0 0 0])
+  ("LEX_TYPE_NUMBER" .
+   [0 0 0 1 0 0 0 0 0 0 0 0 0 0 0])
+  ("lex_find_number" .
+   [0 0 0 0 0 0 0 1 0 0 0 0 0 0 0])
+  ("char" .
+   [1 0 0 0])
+  ("sign" .
+   [4 0 0 0])
+  ("context" .
+   [16 0 2 3 3 1 0])
+  ("state" .
+   [12 0 1 2 1])
+  ("LEX_TYPE_OPEN_PAREN" .
+   [1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0])
+  ("else" .
+   [8 0 0 0])
+  ("if" .
+   [9 0])
+  ("expr" .
+   [6 0 0 0])
+  ("LEX_STATE_OPERATOR" .
+   [0 0 1 4 0 0 0 1 0 1 1 0 0 0 0 0 0 0])
+  ("type" .
+   [6 0 0 0])
+  ("LEX_TYPE_CLOSE_PAREN" .
+   [0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0])
+  ("lex_error" .
+   [1 0 0 0 0 2 0 1 0])
+  ("token" .
+   [18 0 1 1 0])
+  ("malloc" .
+   [1 0 0 0 1 0])
+  ("sizeof" .
+   [2 0 0 0 0 0])
+  ("t_lex_token" .
+   [0 0 0 3 1 0 0 0 0 0 0])
+  ("matched" .
+   [7 0 0 0 1 0 0])
+  ("NULL" .
+   [2 0 0 0])
+  ("free" .
+   [1 0 0 0])))

@@ -1,0 +1,50 @@
+#!/usr/bin/perl -w
+
+use	strict;
+use     IO::Socket::INET;
+use     IO::Select;
+use     GSSAPI;
+use     vars qw/ %opt /;
+use     POSIX;
+use     Tie::RefHash;
+use     Fcntl;
+
+
+my	%lsock = (
+    'addr' => "localhost",
+    'port' => "4747"
+    );
+
+my	$socket;
+
+sub	l_connect()
+{
+    $socket =  IO::Socket::INET->new(Proto => "tcp",
+				     Type => SOCK_STREAM,
+				     PeerAddr => $lsock{'addr'},
+				     PeerPort => $lsock{'port'}) or die "Can't create local socket\n";
+}	
+
+sub	url_encode()
+{
+    my	$toencode = $_[0];
+
+    $toencode=~s/([^a-zA-Z0-9_\-.])/uc sprintf("%%%02x",ord($1))/eg;
+    return $toencode;
+}
+
+
+sub	send_msg()
+{
+    if ($#ARGV < 1)
+    {
+	print("Usage: ns_send_msg login mesg\n");
+	exit(1);
+    }
+    my	$h = sprintf("user_cmd msg *:$ARGV[0]@* msg ");
+    send($socket, $h . &url_encode($ARGV[1]) . "\n", 0);
+    return (0);
+}
+
+&l_connect();
+&send_msg();

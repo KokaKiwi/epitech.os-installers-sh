@@ -1,0 +1,26 @@
+## BOCAL STAFF 2010-2011
+## FEDORA DUMP
+
+limit coredumpsize 0
+
+setenv EDITOR "emacs"
+setenv PAGER "less"
+
+set autolist
+set complete
+set history=1000
+set path=(/usr/{sbin,bin} /{sbin,bin} /usr/{school,netsoul,kerberos,local}/{sbin,bin})
+set prompt='(%n@%m %h)'
+set savehist=1000
+set watch=(1 any any)
+
+alias ll 'ls -l'
+alias la 'ls -a'
+alias j 'jobs'
+alias emacs 'emacs -nw'
+alias ne 'emacs'
+
+if ( -f ${HOME}/.mytcshrc ) then
+    source ${HOME}/.mytcshrc
+endif
+# EOF
