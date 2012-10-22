@@ -2,7 +2,7 @@
 
 if [ $UID == '0' ]; then
 
-    copy "Copie des fichiers de configuration des shells" "files/.tcshrc files/.zshrc files/.vimrc files/.bashrc" "$EPIHOME"
+    copy "Copie des fichiers de configuration des shells" "files/.tcshrc files/.vimrc files/.bashrc" "$EPIHOME"
 
     grab "Google chrome verification key" "https://dl-ssl.google.com/linux" "linux_signing_key.pub"
     sudo apt-key add linux_signing_key.pub
@@ -31,6 +31,11 @@ if [ $UID == '0' ]; then
         cp QNetSoul /usr/bin/qnetsoul
         chmod 777 /usr/bin/qnetsoul
         rm -f QNetSoul Updater
+    fi
+    if ask "Voulez-vous installer Sublime Text?"; then
+        grab "Sublime Text" "http://c758482.r82.cf2.rackcdn.com" "Sublime%20Text%202.0.1%20x64.tar.bz2"
+        deco "Sublime%20Text%202.0.1%20x64.tar.bz2"
+        rm -f "Sublime%20Text%202.0.1%20x64.tar.bz2"
     fi
 
     epi-install "gcc-multilib libc6-i386" "Installation des paquets multilib"
