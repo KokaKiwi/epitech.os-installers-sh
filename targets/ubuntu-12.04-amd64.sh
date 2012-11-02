@@ -14,6 +14,7 @@ if [ $UID == '0' ]; then
     epi-install "libqt4-core libqt4-dbus ubuntu-tweak tree valgrind libncurses5-dev libncursesw5-dev libncurses5-dbg libncursesw5-dbg ncurses-doc alien curl tcsh libssl-dev vlc flashplugin-installer lib32stdc++6 lib32asound2 ia32-libs libc6-i386 lib32gcc1" "Installation des paquets de base..."
 
     if ask "Voulez-vous installer Google Chrome?"; then
+        epi-install "libxss1" "Installation des dependances de Google Chrome..."
         grab "Google chrome stable" "https://dl.google.com/linux/direct" "google-chrome-stable_current_amd64.deb"
         dpkg -i google-chrome-stable_current_amd64.deb
         rm -f google-chrome-stable_current_amd64.deb
