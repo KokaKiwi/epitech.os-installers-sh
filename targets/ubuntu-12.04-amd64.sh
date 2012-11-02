@@ -5,7 +5,10 @@ if [ $UID == '0' ]; then
     copy "Copie des fichiers de configuration des shells" "files/.tcshrc files/.vimrc files/.bashrc" "$EPIHOME"
 
     grab "Google chrome verification key" "https://dl-ssl.google.com/linux" "linux_signing_key.pub"
-    sudo apt-key add linux_signing_key.pub
+    apt-key add linux_signing_key.pub
+
+    add-apt-repository ppa:tualatrix/ppa
+    apt-get -qq update
 
     epi-install "libqt4-core libqt4-dbus ubuntu-tweak tree valgrind libncurses5-dev libncursesw5-dev libncurses5-dbg libncursesw5-dbg ncurses-doc alien curl tcsh libssl-dev vlc flashplugin-installer lib32stdc++6 lib32asound2 ia32-libs libc6-i386 lib32gcc1" "Installation des paquets de base..."
 
