@@ -7,6 +7,7 @@ if [ $UID == '0' ]; then
     grab "Google chrome verification key" "https://dl-ssl.google.com/linux" "linux_signing_key.pub"
     apt-key add linux_signing_key.pub
 
+    info "-" "Ajout du depot Debian pour le paquet ubuntu-tweak"
     add-apt-repository ppa:tualatrix/ppa
     apt-get -qq update
 
