@@ -13,36 +13,6 @@ if [ $UID == '0' ]; then
 
     epi-install "libqt4-core libqt4-dbus ubuntu-tweak tree valgrind libncurses5-dev libncursesw5-dev libncurses5-dbg libncursesw5-dbg ncurses-doc alien curl tcsh libssl-dev vlc flashplugin-installer lib32stdc++6 lib32asound2 ia32-libs libc6-i386 lib32gcc1" "Installation des paquets de base..."
 
-    if ask "Voulez-vous installer Google Chrome?"; then
-        epi-install "libxss1" "Installation des dependances de Google Chrome..."
-        grab "Google chrome stable" "https://dl.google.com/linux/direct" "google-chrome-stable_current_amd64.deb"
-        dpkg -i google-chrome-stable_current_amd64.deb
-        rm -f google-chrome-stable_current_amd64.deb
-    fi
-    if ask "Voulez-vous installer Skype?"; then
-        grab "Skype" "http://www.skype.com/go" "getskype-linux-beta-ubuntu-64"
-        dpkg -i skype-ubuntu_amd64.deb
-        rm -r skype-ubuntu_amd64.deb
-    fi
-    if ask "Voulez-vous installer Teamviewer?"; then
-        grab "Teamviewer" "http://www.teamviewer.com/download" "teamviewer_linux.deb"
-        dpkg -i teamviewer_linux.deb
-        rm -f teamviewer_linux.deb
-    fi
-    if ask "Voulez-vous installer QNetSoul?"; then
-        grab "QNetSoul" "http://dl.dropbox.com/u/13100583" "qnetsoul-latest.tar.gz"
-        deco "qnetsoul-latest.tar.gz"
-        rm -f qnetsoul-latest.tar.gz
-        cp QNetSoul /usr/bin/qnetsoul
-        chmod 777 /usr/bin/qnetsoul
-        rm -f QNetSoul Updater
-    fi
-    if ask "Voulez-vous installer Sublime Text?"; then
-        grab "Sublime Text" "http://c758482.r82.cf2.rackcdn.com" "Sublime%20Text%202.0.1%20x64.tar.bz2"
-        deco "Sublime%20Text%202.0.1%20x64.tar.bz2"
-        rm -f "Sublime%20Text%202.0.1%20x64.tar.bz2"
-    fi
-
     epi-install "gcc-multilib libc6-i386" "Installation des paquets multilib"
 
     info "-" "Configuration des fichiers specifiques."
@@ -84,6 +54,36 @@ if [ $UID == '0' ]; then
     beg "-" "Creation du lien symbolique 'u' vers l'AFS (Cette action peut necessiter plusieures minutes)"
         ln -s /afs/epitech.net/users /u
     end "-" "Creation du lien symbolique 'u' vers l'AFS (Cette action peut necessiter plusieures minutes)"
+
+    if ask "Voulez-vous installer Google Chrome?"; then
+        epi-install "libxss1" "Installation des dependances de Google Chrome..."
+        grab "Google chrome stable" "https://dl.google.com/linux/direct" "google-chrome-stable_current_amd64.deb"
+        dpkg -i google-chrome-stable_current_amd64.deb
+        rm -f google-chrome-stable_current_amd64.deb
+    fi
+    if ask "Voulez-vous installer Skype?"; then
+        grab "Skype" "http://www.skype.com/go" "getskype-linux-beta-ubuntu-64"
+        dpkg -i skype-ubuntu_amd64.deb
+        rm -r skype-ubuntu_amd64.deb
+    fi
+    if ask "Voulez-vous installer Teamviewer?"; then
+        grab "Teamviewer" "http://www.teamviewer.com/download" "teamviewer_linux.deb"
+        dpkg -i teamviewer_linux.deb
+        rm -f teamviewer_linux.deb
+    fi
+    if ask "Voulez-vous installer QNetSoul?"; then
+        grab "QNetSoul" "http://dl.dropbox.com/u/13100583" "qnetsoul-latest.tar.gz"
+        deco "qnetsoul-latest.tar.gz"
+        rm -f qnetsoul-latest.tar.gz
+        cp QNetSoul /usr/bin/qnetsoul
+        chmod 777 /usr/bin/qnetsoul
+        rm -f QNetSoul Updater
+    fi
+    if ask "Voulez-vous installer Sublime Text?"; then
+        grab "Sublime Text" "http://c758482.r82.cf2.rackcdn.com" "Sublime%20Text%202.0.1%20x64.tar.bz2"
+        deco "Sublime%20Text%202.0.1%20x64.tar.bz2"
+        rm -f "Sublime%20Text%202.0.1%20x64.tar.bz2"
+    fi
 
     info "Si ce n'est deja fait, relancez ce script en tant qu'utilisateur normal: $0 $1"
     info "Il est conseille de redemarrer l'ordinateur afin d'appliquer les changements."
