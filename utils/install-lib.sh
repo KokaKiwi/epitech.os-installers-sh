@@ -14,7 +14,7 @@ function error_handler()
 function epi-install()
 {
     beg "apt-get" "$2"
-    apt-get -qq -f -y -s install $1
+    apt-get -qq -f -y install $1
     error_handler "Failed to install '$1'."
     end "apt-get" "$2"
 }
